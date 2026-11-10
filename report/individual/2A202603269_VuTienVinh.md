@@ -7,7 +7,7 @@
 - Email: 26ai.vinhvt@vinuni.edu.vn
 - Lớp: L2B
 - Link repo bài làm: https://github.com/TienVinh03/K5-L2B-DAY02-VuTienVinh-2A202603269-ObjectDetection
-- Link Colab đã chạy: *(Điền link Colab sau khi chạy xong notebook)*
+- Link Colab đã chạy: https://colab.research.google.com/drive/1iXgXgIaciGiNeE2hyf3AQ8mBq8pCUSAq?usp=sharing
 
 ## 2. Schema và mini guideline
 
@@ -74,23 +74,32 @@ Không suy nguyên nhân chỉ từ số lượng FP/FN, việc kiểm tra đố
 
 ## 5. Kết quả YOLO
 
-- Runtime, GPU/CPU, phiên bản Ultralytics và Torch: *(Điền sau khi chạy Colab)*
-- Các tham số thay đổi so với notebook nếu có và lý do: Giữ nguyên mặc định theo notebook (`yolo26n.pt`, `data.yaml`).
-- Đường dẫn best checkpoint trong phiên chạy: `outputs/yolo26_runs/vehicle_annotation/weights/best.pt`
+- Runtime, GPU/CPU, phiên bản Ultralytics và Torch: Google Colab T4 GPU (device: 0), Torch, Ultralytics phiên bản mới nhất.
+- Các tham số thay đổi so với notebook nếu có và lý do: Giữ nguyên mặc định theo notebook (`yolo26n.pt`, 50 epochs, imgsz=640, `data.yaml`).
+- Đường dẫn best checkpoint trong phiên chạy: `assets/yolo26_runs/vehicle_annotation/weights/best.pt` (đạt tốt nhất ở epoch 13).
 
 | Chỉ số trên 10 ảnh eval | Giá trị |
 |---|---:|
-| Precision | *(Điền sau khi chạy Colab)* |
-| Recall | *(Điền sau khi chạy Colab)* |
-| mAP50 | *(Điền sau khi chạy Colab)* |
-| mAP50–95 | *(Điền sau khi chạy Colab)* |
+| Precision | 0.7804 |
+| Recall | 0.3005 |
+| mAP50 | 0.3424 |
+| mAP50–95 | 0.2508 |
 
-*Các folder `assets/eval_predictions/` và `assets/yolo26_runs/` sẽ được giải nén từ `day2_colab_outputs.zip` và đặt cạnh báo cáo.*
+*Cả 2 folder [assets/eval_predictions/](assets/eval_predictions/) và [assets/yolo26_runs/](assets/yolo26_runs/) đã được giải nén từ `day2_colab_outputs.zip` và đặt cạnh báo cáo.*
 
 Trả lời bốn câu hỏi cuối notebook:
 
 1. **Lớp nào recall thấp nhất? Ảnh nào minh họa?**
-   *(Điền kết quả thực tế từ runs evaluation trên Colab, kèm tên ảnh minh họa cụ thể)*
+   - **Lớp có recall thấp nhất:** Hai lớp **`truck`** và **`van`** đều có recall thấp nhất bằng **`0.0%` (0.000)** theo ma trận nhầm lẫn (Confusion Matrix).
+     - Chi tiết:
+       - Lớp `truck` có 5 xe trong tập eval nhưng 5/5 xe đều bị model nhận diện nhầm thành `car` (Recall = 0/5 = 0.0%).
+       - Lớp `van` có 12 xe trong tập eval nhưng không có xe nào được đoán đúng lớp `van` (7 xe bị đoán nhầm thành `bus`, 3 xe đoán thành `car`, 2 xe bị bỏ sót; Recall = 0/12 = 0.0%).
+       - Lớp `bus` đạt recall 50.0% (1/2 xe).
+       - Lớp `car` đạt recall cao nhất 92.6% (87/94 xe).
+   - **Ảnh minh họa cụ thể:**
+     - Ảnh [drive_058.jpg](assets/eval_predictions/visuals/drive_058.jpg): Ground truth có tới 6 xe `van` và 1 xe `bus`, nhưng mô hình dự đoán gần như toàn bộ thành `car` và `bus` (các xe dạng khối hộp bị dán nhãn `bus` với conf 0.51, 0.65, 0.70), hoàn toàn không nhận diện được box nào là `van`.
+     - Ảnh [drive_056.jpg](assets/eval_predictions/visuals/drive_056.jpg): Có 1 xe `truck` ở làn giữa nhưng mô hình gán nhãn nhầm thành `car` với độ tin cậy rất cao (conf 0.93).
+   - **Nguyên nhân cốt lõi:** Hiện tượng mất cân bằng số lượng mẫu nghiêm trọng (Class Imbalance) trong tập train 50 ảnh (số lượng `car` áp đảo hoàn toàn so với `truck`, `bus`, `van`), kết hợp với sự cố hoán đổi thứ tự class ID ở nhãn train khiến mô hình bị thiên lệch (bias) về việc dự đoán mọi xe kích thước trung bình thành `car` hoặc nhầm lẫn giữa `van` và `bus`.
 2. **Nếu mAP50 cao nhưng mAP50–95 thấp, cần kiểm điều gì trên box?**
    Cần kiểm tra **độ bám sát hình học (Tightness) của bounding box**. mAP50 chỉ yêu cầu $\text{IoU} \ge 0.50$ (chỉ cần bao quanh vật thể tương đối là đạt), nhưng mAP50-95 tính trung bình từ IoU 0.50 đến 0.95. Nếu mAP50-95 thấp, chứng tỏ box vẽ bị lỏng (quá rộng chứa nhiều nền) hoặc bị cắt lẹm vào thân xe, làm IoU thực tế thấp ở các ngưỡng khắt khe.
 3. **Lỗi class nào có thể liên quan guideline? Dữ kiện nào hỗ trợ nhận xét?**
